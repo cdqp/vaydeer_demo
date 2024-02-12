@@ -1,0 +1,58 @@
+[root@fedora Volume Controller]# usbhid-dump -m 0E6A:0305 | grep -v : | xxd -r -p | hidrd-convert -o spec
+Usage Page (Desktop),               ; Generic desktop controls (01h)
+Usage (Keyboard),                   ; Keyboard (06h, application collection)
+Collection (Application),
+    Report ID (1),
+    Usage Page (Keyboard),          ; Keyboard/keypad (07h)
+    Usage Minimum (KB Leftcontrol), ; Keyboard left control (E0h, dynamic value)
+    Usage Maximum (KB Right GUI),   ; Keyboard right GUI (E7h, dynamic value)
+    Logical Minimum (0),
+    Logical Maximum (1),
+    Report Size (1),
+    Report Count (8),
+    Input (Variable),
+    Report Count (1),
+    Report Size (8),
+    Input (Constant),
+    Report Count (3),
+    Report Size (1),
+    Usage Page (LED),               ; LEDs (08h)
+    Usage Minimum (01h),
+    Usage Maximum (03h),
+    Output (Variable),
+    Report Count (5),
+    Report Size (1),
+    Output (Constant),
+    Report Count (6),
+    Report Size (8),
+    Logical Minimum (0),
+    Logical Maximum (255),
+    Usage Page (Keyboard),          ; Keyboard/keypad (07h)
+    Usage Minimum (None),           ; No event (00h, selector)
+    Usage Maximum (FFh),
+    Input,
+    Usage (None),                   ; No event (00h, selector)
+    Report Count (8),
+    Report Size (8),
+    Feature,
+End Collection,
+Usage Page (Consumer),              ; Consumer (0Ch)
+Usage (Consumer Control),           ; Consumer control (01h, application collection)
+Collection (Application),
+    Report ID (2),
+    Usage Page (Consumer),          ; Consumer (0Ch)
+    Logical Minimum (0),
+    Logical Maximum (1),
+    Report Size (1),
+    Report Count (8),
+    Usage (Scan Next Track),        ; Scan next track (B5h, one-shot control)
+    Usage (Scan Previous Track),    ; Scan previous track (B6h, one-shot control)
+    Usage (Stop),                   ; Stop (B7h, one-shot control)
+    Usage (Eject),                  ; Eject (B8h, one-shot control)
+    Usage (Play Pause),             ; Play/pause (CDh, one-shot control)
+    Usage (Mute),                   ; Mute (E2h, on/off control)
+    Usage (Volume Inc),             ; Volume increment (E9h, re-trigger control)
+    Usage (Volume Dec),             ; Volume decrement (EAh, re-trigger control)
+    Input (Variable),
+End Collection
+
