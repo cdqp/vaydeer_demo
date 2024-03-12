@@ -12,21 +12,21 @@ import RPi.GPIO as GPIO
 
 
 #Stepper Motor Configuration
-PUL1 = 17
-DIR1 = 27
-ENA1 = 22
+PUL1 = 36
+DIR1 = 38
+ENA1 = 40
 
-PUL2 = 6
-DIR2 = 13
-ENA2 = 26
+PUL2 = 7
+DIR2 = 29
+ENA2 = 32
 
-PUL3 = 4
-DIR3 = 5
-ENA3 = 12
+PUL3 = 31
+DIR3 = 33
+ENA3 = 37
 
-PUL4 = 16
-DIR4 = 20
-ENA4 = 21
+PUL4 = 11
+DIR4 = 13
+ENA4 = 15
 
 GPIO.setmode(GPIO.BCM)
 
@@ -72,7 +72,7 @@ def moveBy(motor, duration, direction):
         DIR = DIR4
         ENA = ENA4
     
-    GPIO.output(ENA, GPIO.HIGH)
+    #GPIO.output(ENA, GPIO.HIGH)
     
     time.sleep(.1)
     
@@ -121,7 +121,8 @@ def main():
                     print("Mute")
 
                 elif data[IDX_FUNCTION] == CONST.FN_PLAY_PAUSE:
-                    print("Play/Pause")
+                    GPIO.output(ENA, GPIO.HIGH)
+                    print(f"{current_motor} motor enabled!")
                     
                 elif data[IDX_FUNCTION] == CONST.FN_EJECT:
                     print("Eject")
@@ -130,9 +131,12 @@ def main():
                     print("Stop")
                     
                 elif data[IDX_FUNCTION] == CONST.FN_SCAN_PREVIOUS_TRACK:
-                    print("Scan Previous Track")
+                    GPIO.output(ENA, GPIO.LOW)
+                    current_motor = (current_motor - 1) % 4
+                    print(f"Current Motor: {current_motor}")
                     
                 elif data[IDX_FUNCTION] == CONST.FN_SCAN_NEXT_TRACK:
+                    GPIO.output(ENA, GPIO.LOW)
                     current_motor = (current_motor + 1) % 4
                     print(f"Current Motor: {current_motor}")
                     
