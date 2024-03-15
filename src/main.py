@@ -1,105 +1,25 @@
 import hid
-import constants as CONST
-from constants import *
-
-import time
-import numpy as np
-import matplotlib.pyplot as plt
-
-#Device Imports
-import piplates.DAQC2plate as DAQ
 import RPi.GPIO as GPIO
 
-
-#Stepper Motor Configuration
-PUL1 = 36
-DIR1 = 38
-ENA1 = 40
-
-PUL2 = 7
-DIR2 = 29
-ENA2 = 32
-
-PUL3 = 31
-DIR3 = 33
-ENA3 = 37
-
-PUL4 = 11
-DIR4 = 13
-ENA4 = 15
-
-GPIO.setmode(GPIO.BCM)
-
-GPIO.setup(PUL1, GPIO.OUT)
-GPIO.setup(DIR1, GPIO.OUT)
-GPIO.setup(ENA1, GPIO.OUT)
-
-GPIO.setup(PUL2, GPIO.OUT)
-GPIO.setup(DIR2, GPIO.OUT)
-GPIO.setup(ENA2, GPIO.OUT)
-
-GPIO.setup(PUL3, GPIO.OUT)
-GPIO.setup(DIR3, GPIO.OUT)
-GPIO.setup(ENA3, GPIO.OUT)
-
-GPIO.setup(PUL4, GPIO.OUT)
-GPIO.setup(DIR4, GPIO.OUT)
-GPIO.setup(ENA4, GPIO.OUT)
+from vaydeer import *
+from motor import *
 
 
-delay = 0.001
-
-
-def moveBy(motor, duration, direction):
+def setup_gpio():
+    """Configure the GPIO pins for controlling stepper motors."""
     
-    if motor == 0:
-        PUL = PUL1
-        DIR = DIR1
-        ENA = ENA1
-    
-    if motor == 1:
-        PUL = PUL2
-        DIR = DIR2
-        ENA = ENA2
-      
-    if motor == 2:
-        PUL = PUL3
-        DIR = DIR3
-        ENA = ENA3
-        
-    if motor == 3:
-        PUL = PUL4
-        DIR = DIR4
-        ENA = ENA4
-    
-    #GPIO.output(ENA, GPIO.HIGH)
-    
-    time.sleep(.1)
-    
-    if direction == 1:
-        GPIO.output(DIR, GPIO.LOW)
-        
-    elif direction == -1:
-        GPIO.output(DIR, GPIO.HIGH)
-    
-    else:
-        print("ERROR: Direction Unknown")
-        return
-   
-    for x in range(duration): 
-        GPIO.output(PUL, GPIO.HIGH)
-        time.sleep(delay)
-        GPIO.output(PUL, GPIO.LOW)
-        time.sleep(delay)
-    #GPIO.output(ENA, GPIO.LOW)
-    
-    time.sleep(.1)
-    return
+    # Identify pins according to the Broadcom SOC channel.
+    GPIO.setmode(GPIO.BCM)
 
+    # Get a list of all pins, and configure them to output.
+    GPIO.setup([pin.value for pin in Pin], GPIO.OUT)
 
 
 def main():
-    current_motor = 1
+    # Maintain the current motor index in the list.
+    motor_idx = 0
+    # Indicate whether motor control is enabled.
+    is_enabled = True
     
     # Open the Vaydeer multimedia volume controller knob.
     with hid.Device(ID_VENDOR, ID_PRODUCT) as dev:
@@ -111,36 +31,37 @@ def main():
             # Check whether data was received, and check whether the data comes from a consumer control function.
             if data and data[IDX_REPORT] == ID_CONSUMER_CTRL:
                 # Match the consumer control function.
-                if data[IDX_FUNCTION] == CONST.FN_VOLUME_DECREMENT:
-                    moveBy(current_motor, duration=10, direction=-1)
+                if data[IDX_FUNCTION] == FN_VOLUME_DECREMENT:
+                    if is_enabled:
+                        MOTORS[motor_idx].step(Direction.FORWARDS)
                     
-                elif data[IDX_FUNCTION] == CONST.FN_VOLUME_INCREMENT:
-                    moveBy(current_motor, duration=10, direction=1)
+                elif data[IDX_FUNCTION] == FN_VOLUME_INCREMENT:
+                    if is_enabled:
+                        MOTORS[motor_idx].step(Direction.BACKWARDS)
                     
-                elif data[IDX_FUNCTION] == CONST.FN_MUTE:
-                    print("Mute")
-
-                elif data[IDX_FUNCTION] == CONST.FN_PLAY_PAUSE:
-                    GPIO.output(ENA, GPIO.HIGH)
-                    print(f"{current_motor} motor enabled!")
+                elif data[IDX_FUNCTION] == FN_MUTE:
+                    is_enabled = not is_enabled
+                    print(f"Motor Control: {'Enabled' if is_enabled else 'Disabled'}")
                     
-                elif data[IDX_FUNCTION] == CONST.FN_EJECT:
-                    print("Eject")
+                elif data[IDX_FUNCTION] == FN_SCAN_PREVIOUS_TRACK:
+                    motor_idx = (motor_idx - 1) % len(MOTORS)
+                    print(f"Current Motor: {motor_idx + 1}")
                     
-                elif data[IDX_FUNCTION] == CONST.FN_STOP:
-                    print("Stop")
-                    
-                elif data[IDX_FUNCTION] == CONST.FN_SCAN_PREVIOUS_TRACK:
-                    GPIO.output(ENA, GPIO.LOW)
-                    current_motor = (current_motor - 1) % 4
-                    print(f"Current Motor: {current_motor}")
-                    
-                elif data[IDX_FUNCTION] == CONST.FN_SCAN_NEXT_TRACK:
-                    GPIO.output(ENA, GPIO.LOW)
-                    current_motor = (current_motor + 1) % 4
-                    print(f"Current Motor: {current_motor}")
+                elif data[IDX_FUNCTION] == FN_SCAN_NEXT_TRACK:
+                    motor_idx = (motor_idx + 1) % len(MOTORS)
+                    print(f"Current Motor: {motor_idx + 1}")
                     
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        # Configure the GPIO pins for output.
+        setup_gpio()
+        
+        # Enter the event loop.
+        main()
+        
+    finally:
+        # Mitigate the risk of damage by resetting all configured pins to input mode.
+        # This only cleans up pins configured in this program.
+        GPIO.cleanup()
